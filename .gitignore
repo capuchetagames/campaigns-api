@@ -37,7 +37,8 @@ ScaffoldingReadMe.txt
 *.snupkg
 
 # dotenv environment variables file
-.env
+.env.local
+.env.aws
 
 # Others
 ~$*
@@ -55,3 +56,8 @@ CodeCoverage/
 *.VisualState.xml
 TestResult.xml
 nunit-*.xml
+
+.DS_Store
+.idea/
+
+

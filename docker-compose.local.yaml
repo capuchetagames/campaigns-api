@@ -1,0 +1,76 @@
+﻿services:
+  catalog-db:
+    image: postgres:16
+    container_name: catalog_db_postgres
+    environment:
+      POSTGRES_DB: Db.Catalog
+      POSTGRES_USER: ${PG_USER}
+      POSTGRES_PASSWORD: ${PG_PASSWORD}
+    ports:
+      - "5436:5432"
+    volumes:
+      - catalog_pg_data:/var/lib/postgresql/data
+    networks:
+      - microsservicos-net
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d Db.Catalog" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      
+  elastic-search:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.13.0
+    container_name: elastic_search
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+    ports:
+      - "9200:9200"
+    networks:
+      - microsservicos-net
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -sf http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=5s || exit 1" ]
+      interval: 15s     
+      timeout: 10s      
+      retries: 10       
+      start_period: 60s
+    volumes:
+      - elastic_search_data:/usr/share/elasticsearch/data
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    networks:
+      - microsservicos-net
+
+# Só no docker-compose.local.yml (override)
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    environment:
+      - REDIS_HOSTS=local:redis:6379
+    ports:
+      - "8081:8081"
+    networks:
+      - microsservicos-net
+    depends_on:
+      - redis
+      
+
+  catalog-api:
+    depends_on:
+      catalog-db:
+        condition: service_healthy
+      dynamodb-local:
+        condition: service_started
+      elastic-search:
+        condition: service_healthy
+    
+volumes:
+  catalog_pg_data:
+  elastic_search_data:
+
+networks:
+  microsservicos-net:
+    name: app-network
+    driver: bridge
