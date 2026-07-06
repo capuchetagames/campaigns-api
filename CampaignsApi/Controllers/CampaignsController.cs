@@ -174,6 +174,17 @@ public class CampaignsController : ControllerBase
             
             _campaignRepository.Add(campaign);
             
+            
+            await _rabbitMqService.PublishAsync(
+                "campaign.events",
+                "campaign.added",
+                new NewCampaignEvent(campaign.Title, campaign.Description,
+                    campaign.StartDate,campaign.EndDate,
+                    campaign.FinancialGoal,campaign.Status),CancellationToken.None
+            );
+
+            
+            
             //await _elasticClient.IndexAsync(campaign,CatalogIndexName);
             
             // Limpar cache da lista de Campanhas
@@ -246,6 +257,17 @@ public class CampaignsController : ControllerBase
             campaign.Status = updateInput.Status;
             
             _campaignRepository.Update(campaign);
+            
+            
+            
+            await _rabbitMqService.PublishAsync(
+                "campaign.events",
+                "campaign.updated",
+                new UpdateCampaignEvent(campaign.Id, campaign.Title, campaign.Description,
+                    campaign.StartDate,campaign.EndDate,
+                    campaign.FinancialGoal,campaign.Status),CancellationToken.None
+            );
+            
             
             //ElasticSearch
             //await _elasticClient.IndexAsync(campaign, CatalogIndexName);
@@ -326,38 +348,38 @@ public class CampaignsController : ControllerBase
     }
     
 
-    [HttpGet("search")]
-    public async Task<IActionResult> Search([FromQuery] string q, [FromQuery] string? category = null)
-    {
-        if (string.IsNullOrWhiteSpace(q))
-            return BadRequest(new { error = "Parâmetro 'q' é obrigatório" });
-        
-        var results = await _elasticClient.SearchAsync(CatalogIndexName, q, category);
-        
-        return Ok(results);
-    }
-    
-    [HttpPost("reindex")]
-    public async Task<IActionResult> Reindex()
-    {
-        try
-        {
-            var games = _campaignRepository.GetAll();
-        
-            foreach (var game in games)
-            {
-                await _elasticClient.IndexAsync(game, CatalogIndexName);
-            }
-        
-            _logger.LogInformation($"{games.Count} jogos reindexados com sucesso.");
-            return Ok(new { message = $"{games.Count} jogos reindexados com sucesso." });
-        }
-        catch (Exception e)
-        {
-            _logger.LogError($"Erro ao reindexar: {e.Message}");
-            return StatusCode(500, new { message = "Erro ao reindexar.", error = e.Message });
-        }
-    }
+    // [HttpGet("search")]
+    // public async Task<IActionResult> Search([FromQuery] string q, [FromQuery] string? category = null)
+    // {
+    //     if (string.IsNullOrWhiteSpace(q))
+    //         return BadRequest(new { error = "Parâmetro 'q' é obrigatório" });
+    //     
+    //     var results = await _elasticClient.SearchAsync(CatalogIndexName, q, category);
+    //     
+    //     return Ok(results);
+    // }
+    //
+    // [HttpPost("reindex")]
+    // public async Task<IActionResult> Reindex()
+    // {
+    //     try
+    //     {
+    //         var games = _campaignRepository.GetAll();
+    //     
+    //         foreach (var game in games)
+    //         {
+    //             await _elasticClient.IndexAsync(game, CatalogIndexName);
+    //         }
+    //     
+    //         _logger.LogInformation($"{games.Count} jogos reindexados com sucesso.");
+    //         return Ok(new { message = $"{games.Count} jogos reindexados com sucesso." });
+    //     }
+    //     catch (Exception e)
+    //     {
+    //         _logger.LogError($"Erro ao reindexar: {e.Message}");
+    //         return StatusCode(500, new { message = "Erro ao reindexar.", error = e.Message });
+    //     }
+    // }
 
     /// <summary>
     /// Endpoint público para verificar status do serviço de catálogo.
