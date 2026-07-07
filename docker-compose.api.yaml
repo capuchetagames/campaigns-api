@@ -6,7 +6,7 @@
     container_name: campaigns_api
     restart: on-failure
     ports:
-      - "5200:8080" 
+      - "5245:8080" 
     environment:
       RABBITMQ_HOST: rabbitmq
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT}

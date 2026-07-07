@@ -17,48 +17,6 @@
       interval: 10s
       timeout: 5s
       retries: 10
-      
-      
-  prometheus:
-    image: prom/prometheus:latest
-    container_name: prometheus
-    volumes:
-      - prometheus-data:/prometheus
-    ports:
-      - "9090:9090"
-    networks:
-      - microsservicos-net
-    restart: unless-stopped
-
-
-  grafana:
-    image: grafana/grafana
-    container_name: grafana
-    ports:
-      - "3000:3000"
-    depends_on:
-      - prometheus
-    networks:
-      - microsservicos-net
-      
-
-  redis:
-    image: redis:7-alpine
-    restart: unless-stopped
-    networks:
-      - microsservicos-net
-    
-    # Só no docker-compose.local.yml (override)
-    redis-commander:
-      image: rediscommander/redis-commander:latest
-      environment:
-        - REDIS_HOSTS=local:redis:6379
-      ports:
-        - "8081:8081"
-      networks:
-        - microsservicos-net
-      depends_on:
-        - redis
 
 
   campaigns-api:
@@ -70,7 +28,6 @@
     
     
 volumes:
-  prometheus-data:
   campaigns_pg_data:
 
 
