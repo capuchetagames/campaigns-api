@@ -1,3 +1,4 @@
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using Core.Models;
 
@@ -49,9 +50,8 @@ public class JwtValidationMiddleware
         // Adicionar claims do usuário ao contexto
         var claims = new List<Claim>
         {
-            new(ClaimTypes.Name, validationResult.Username),
+            new(JwtRegisteredClaimNames.Sub, validationResult.Id ?? string.Empty),
             new(ClaimTypes.Role, validationResult.Role),
-            new(ClaimTypes.NameIdentifier, validationResult.UserId.ToString()),
             new("jti", validationResult.TokenId ?? string.Empty)
         };
 
@@ -59,7 +59,7 @@ public class JwtValidationMiddleware
         context.User = new ClaimsPrincipal(identity);
 
         _logger.LogInformation("Usuário autenticado: {Username} com role: {Role}", 
-            validationResult.Username, validationResult.Role);
+            validationResult.Id, validationResult.Role);
 
         await _next(context);
     }

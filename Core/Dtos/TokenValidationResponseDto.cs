@@ -13,17 +13,12 @@ public class TokenValidationResponseDto
     /// <summary>
     /// Nome de usuário extraído do token.
     /// </summary>
-    public string Username { get; set; } = string.Empty;
+    public string? Id { get; set; }
     
     /// <summary>
     /// Role/permissão do usuário extraída do token.
     /// </summary>
     public string Role { get; set; } = string.Empty;
-    
-    /// <summary>
-    /// ID do usuário no banco de dados.
-    /// </summary>
-    public int UserId { get; set; }
     
     /// <summary>
     /// ID único do token (JTI claim).

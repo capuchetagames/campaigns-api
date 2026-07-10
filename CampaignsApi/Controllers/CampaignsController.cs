@@ -1,3 +1,4 @@
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using Core;
 using Core.Dtos;
@@ -77,6 +78,31 @@ public class CampaignsController : ControllerBase
             });
         }
     }
+    
+    
+    private Guid ValidateUserToken(Role validateRole)
+    {
+        var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+
+        var role = new Role();
+            
+        if(!string.IsNullOrEmpty(userRole))
+        {
+            role = Enum.Parse<Role>(userRole);
+        }
+            
+        //var username = User.FindFirst(ClaimTypes.Name)?.Value;
+        var userId = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
+
+        var userGuid = Guid.Empty;
+            
+        if(!string.IsNullOrEmpty(userId) || role == validateRole)
+        {
+            userGuid = Guid.Parse(userId);
+        }
+        
+        return userGuid;
+    }
 
     [HttpGet("{id:Guid}")]
     [Authorize(Policy = nameof(Role.Manager))]
@@ -137,20 +163,15 @@ public class CampaignsController : ControllerBase
     {
         try
         {
-            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
-            var username = User.FindFirst(ClaimTypes.Name)?.Value;
+            var userGuid = ValidateUserToken(Role.Manager);
             
-            _logger.LogInformation($"User: {username}  criando nova Campanha: {campaignInput.Title}");
-            
-
-            // Verificar se o usuário tem permissão de Admin
-            // if (userRole != nameof(PermissionType.Admin))
-            // {
-            //     _logger.LogWarning($"Usuário {username} tentou criar jogo sem permissão de Admin.");
-            //     return Forbid("Acesso negado. Apenas administradores podem criar jogos.");
-            // }
-            //
-            // _logger.LogInformation($"Admin {username} criando novo jogo: {gameInput.Name}");
+            if(userGuid == Guid.Empty)
+            {
+                var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+                
+                return Unauthorized($"user: {userGuid} userRole: {userRole}");
+            }
+            _logger.LogInformation($"User: {userGuid}  criando nova Campanha: {campaignInput.Title}");
             
             
             var validationResult = await _campaignInputValidator.ValidateAsync(campaignInput);
@@ -190,7 +211,7 @@ public class CampaignsController : ControllerBase
             // Limpar cache da lista de Campanhas
             await _cacheService.RemoveAsync(CampaingListCacheKey);
             
-            _logger.LogInformation($"Campanha {campaign.Title} (ID: {campaign.Id}) criado com sucesso pelo manager {username}");
+            _logger.LogInformation($"Campanha {campaign.Title} (ID: {campaign.Id}) criado com sucesso pelo manager {userGuid}");
             
             return CreatedAtAction(nameof(Get), new { id = campaign.Id }, campaign);
         }

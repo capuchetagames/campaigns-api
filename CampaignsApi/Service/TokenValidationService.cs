@@ -49,7 +49,7 @@ public class TokenValidationService : ITokenValidationService
                 var responseContent = await response.Content.ReadAsStringAsync();
                 var validationResponse = JsonSerializer.Deserialize<TokenValidationResponseDto>(responseContent, _jsonOptions);
                 
-                _logger.LogInformation($"Token validado com sucesso para usuário: {validationResponse?.Username}");
+                _logger.LogInformation($"Token validado com sucesso para usuário: {validationResponse?.Id}");
                 return validationResponse;
             }
             else
