@@ -18,6 +18,7 @@ public class CampaignsConfiguration : IEntityTypeConfiguration<Campaign>
         builder.Property(x=> x.StartDate).HasColumnType("TIMESTAMP").IsRequired();
         builder.Property(x=> x.EndDate).HasColumnType("TIMESTAMP").IsRequired();
         builder.Property(x => x.FinancialGoal).HasColumnType("DECIMAL(18,2)").IsRequired();
+        builder.Property(x => x.AmountRaised).HasColumnType("DECIMAL(18,2)").HasDefaultValue(0m).IsRequired();
         builder.Property(x=> x.CreatedAt).HasColumnType("TIMESTAMP").IsRequired();
     }
 }

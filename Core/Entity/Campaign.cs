@@ -15,6 +15,8 @@ public class Campaign : EntityBase
     public DateTime EndDate { get; set; }
     
     public decimal FinancialGoal { get; set; }
-    
+
+    public decimal AmountRaised { get; set; }
+
     public Status Status { get; set; }
 }
