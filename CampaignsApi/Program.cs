@@ -97,6 +97,13 @@ builder.Services.AddSingleton<IRabbitMqService>(sp =>
 
 var app = builder.Build();
 
+// Com DynamoDB local, cria a tabela de logs se ainda não existir
+if (builder.Configuration.GetValue<bool>("DynamoDb:UseLocal"))
+{
+    var dynamoClient = app.Services.GetRequiredService<Amazon.DynamoDBv2.IAmazonDynamoDB>();
+    await DynamoDbExtensions.EnsureLogTableExistsAsync(dynamoClient, logTableName);
+}
+
 app.UseLogMiddleware();
 app.UseDynamoLogging();
 
@@ -117,6 +124,8 @@ if (app.Environment.IsDevelopment())
 
 
 app.UseHttpMetrics();
+
+app.MapMetrics();
 
 app.MapHealthChecks("/health");
 
