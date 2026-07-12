@@ -28,7 +28,8 @@ public class CampaignsController : ControllerBase
     private const string CampaingListCacheKey = "campaing-list";
 
     public CampaignsController(ICampaignRepository campaignRepository, ICacheService cacheService, ILogger<CampaignsController> logger,
-        IRabbitMqService rabbitMqService, IElasticClient<Campaign> elasticClient, IValidator<CampaignInput> campaignInputValidator)
+        IRabbitMqService rabbitMqService, IElasticClient<Campaign> elasticClient, IValidator<CampaignInput> campaignInputValidator,
+        IValidator<CampaignUpdateInput> campaignUpdateValidator)
     {
         _campaignRepository = campaignRepository;
         _cacheService = cacheService;
@@ -36,6 +37,42 @@ public class CampaignsController : ControllerBase
         _rabbitMqService = rabbitMqService;
         _elasticClient = elasticClient;
         _campaignInputValidator = campaignInputValidator;
+        _campaignUpdateValidator = campaignUpdateValidator;
+    }
+
+    /// <summary>
+    /// Painel de Transparência: lista pública das campanhas ativas com o valor arrecadado.
+    /// </summary>
+    [HttpGet("public")]
+    [AllowAnonymous]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public IActionResult GetPublicActiveCampaigns()
+    {
+        try
+        {
+            var campaigns = _campaignRepository.GetAll()
+                .Where(c => c.Status == Status.Active)
+                .Select(c => new
+                {
+                    c.Id,
+                    c.Title,
+                    c.FinancialGoal,
+                    c.AmountRaised
+                })
+                .ToList();
+
+            return Ok(campaigns);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError($"Erro ao buscar campanhas ativas: {e.Message}");
+            return StatusCode(StatusCodes.Status500InternalServerError, new
+            {
+                message = "Erro interno do servidor.",
+                error = e.Message
+            });
+        }
     }
 
     [HttpGet]

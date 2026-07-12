@@ -2,12 +2,15 @@ using CampaignsApi.Config;
 using CampaignsApi.Middlewares;
 using CampaignsApi.Service;
 using CampaignsApi.Service.DynamoLogging;
+using CampaignsApi.Service.Extensions;
 using CampaignsApi.Service.RedisCache;
 using CampaignsApi.Service.Validator;
 using CatalogApi.Service;
 using Core.Models;
+using Core.Models.ElasticSearch;
 using Core.Repository;
 using FluentValidation;
+using Infrastructure.ElasticSearch;
 using Infrastructure.Repository;
 using Microsoft.Extensions.Options;
 using Prometheus;
@@ -62,6 +65,21 @@ builder.Services.AddHttpClient("AccountApi", client =>
 // Registrar serviços de validação de token
 builder.Services.AddScoped<ITokenValidationService, TokenValidationService>();
 
+// Autenticação JWT (mesma chave/emissor da AccountsApi) e policies por Role
+builder.AddJwtAuthentication();
+builder.Services.AddPolicyAuthorization();
+
+// ElasticSearch (client é instanciado de forma lazy; UseCloud=false usa apenas a LocalUrl)
+builder.Services.AddSingleton<IElasticSettings>(
+    builder.Configuration.GetSection("ElasticSettings").Get<ElasticSettings>() ?? new ElasticSettings
+    {
+        UseCloud = false,
+        LocalUrl = "http://localhost:9200",
+        ApiKey = string.Empty,
+        CloudId = string.Empty
+    });
+builder.Services.AddSingleton(typeof(IElasticClient<>), typeof(ElasticClient<>));
+
 builder.Services.AddHealthChecks();
 
 builder.Services.Configure<RabbitMqSettings>(builder.Configuration.GetSection("RabbitMq"));
@@ -104,6 +122,7 @@ app.MapHealthChecks("/health");
 
 app.UseHttpsRedirection();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
