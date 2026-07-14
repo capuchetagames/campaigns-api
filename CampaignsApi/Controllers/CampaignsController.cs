@@ -218,7 +218,6 @@ public class CampaignsController : ControllerBase
                 return BadRequest(validationResult.ToString());
             }
             
-
             var campaign = new Campaign()
             {
                 Title = campaignInput.Title,
@@ -226,12 +225,13 @@ public class CampaignsController : ControllerBase
                 StartDate = campaignInput.StartDate,
                 EndDate = campaignInput.EndDate,
                 FinancialGoal = campaignInput.FinancialGoal,
-                Status = CheckStatusByDate(campaignInput.StartDate)
+                AmountRaised = 0,
+                Status = CheckStatusByDate(campaignInput.StartDate),
+                CreatedBy = userGuid
                 
             };
             
             _campaignRepository.Add(campaign);
-            
             
             await _rabbitMqService.PublishAsync(
                 "campaign.events",

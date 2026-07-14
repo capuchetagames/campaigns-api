@@ -19,4 +19,6 @@ public class Campaign : EntityBase
     public decimal AmountRaised { get; set; }
 
     public Status Status { get; set; }
+    
+    public Guid CreatedBy { get; set; }
 }
