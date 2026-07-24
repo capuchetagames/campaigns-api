@@ -1,0 +1,39 @@
+name: Manual Build
+
+on:
+  workflow_dispatch:
+    inputs:
+      configuration:
+        description: 'Build configuration'
+        required: false
+        default: 'Release'
+        type: choice
+        options:
+          - Release
+          - Debug
+          - 
+env:
+  DOTNET_VERSION: '8.0.x'  
+  BUILD_CONFIG: ${{ github.event.inputs.configuration || 'Release' }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore dependências
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --configuration ${{ env.BUILD_CONFIG }} --no-restore
+
+      - name: Testes
+        run: dotnet test --configuration ${{ env.BUILD_CONFIG }} --no-build --verbosity normal

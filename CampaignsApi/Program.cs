@@ -80,7 +80,7 @@ builder.Services.AddSingleton<IElasticSettings>(
     });
 builder.Services.AddSingleton(typeof(IElasticClient<>), typeof(ElasticClient<>));
 
-builder.Services.AddHealthChecks();
+builder.Services.AddHealthChecks().ForwardToPrometheus(); 
 
 builder.Services.Configure<RabbitMqSettings>(builder.Configuration.GetSection("RabbitMq"));
 

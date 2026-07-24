@@ -22,6 +22,8 @@ public class DonationsController : ControllerBase
     private readonly ILogger<DonationsController> _logger;
     private readonly IElasticClient<Donation> _elasticClient;
     private readonly IValidator<DonationInput> _donationInputValidator;
+    
+    private  const string DonationsListCacheKey = "DonationsList";
 
     public DonationsController(IDonationRepository donationRepository, ICacheService cacheService, ILogger<DonationsController> logger,
         IRabbitMqService rabbitMqService, IElasticClient<Donation> elasticClient, IValidator<DonationInput> donationInputValidator)
@@ -33,49 +35,54 @@ public class DonationsController : ControllerBase
         _elasticClient = elasticClient;
         _donationInputValidator = donationInputValidator;
     }
+
+    [HttpGet]
+    [Authorize(Policy = nameof(Role.Manager))]
+    [ProducesResponseType(typeof(IEnumerable<Donation>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> Get()
+    {
+        try
+        {
+            var userGuid = ValidateUserToken(Role.Manager);
+            
+            if(userGuid == Guid.Empty)
+            {
+                var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+                
+                return Unauthorized($"user: {userGuid} userRole: {userRole}");
+            }
     
+            var cachedGameList = await _cacheService.GetAsync<List<Donation>>(DonationsListCacheKey);
     
-    // [HttpGet]
-    // [Authorize(Policy = nameof(Role.Manager))]
-    // [ProducesResponseType(typeof(IEnumerable<Donation>), StatusCodes.Status200OK)]
-    // [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    // [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    // [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    // public async Task<IActionResult> Get()
-    // {
-    //     try
-    //     {
-    //         var username = User.FindFirst(ClaimTypes.Name)?.Value;
-    //         var username = User.FindFirst(ClaimTypes.Name)?.Value;
-    //         _logger.LogInformation($"Usuário {username} acessando lista de Camapanhas.");
-    //
-    //         var cachedGameList = await _cacheService.GetAsync<List<Donation>>(CampaingListCacheKey);
-    //
-    //         if (cachedGameList != null)
-    //         {
-    //             return Ok(cachedGameList);
-    //         }
-    //         
-    //         var campaigns = _campaignRepository.GetAll();
-    //
-    //         if (campaigns.Count > 0)
-    //         {
-    //             await _cacheService.SetAsync(CampaingListCacheKey, campaigns, TimeSpan.FromMinutes(15));
-    //         } 
-    //         
-    //         _logger.LogInformation($"Retornados {campaigns.Count} campanhas {username}.");
-    //         return Ok(campaigns);
-    //     }
-    //     catch (Exception e)
-    //     {
-    //         _logger.LogError($"Erro ao buscar lista de campanhas: {e.Message}");
-    //         return StatusCode(StatusCodes.Status500InternalServerError, new 
-    //         { 
-    //             message = "Ocorreu um erro interno ao buscar os jogos.",
-    //             error = e.Message
-    //         });
-    //     }
-    // }
+            if (cachedGameList != null)
+            {
+                return Ok(cachedGameList);
+            }
+            
+            var donations = _donationRepository.GetAll();
+    
+            if (donations.Count > 0)
+            {
+                await _cacheService.SetAsync(DonationsListCacheKey, donations, TimeSpan.FromMinutes(15));
+            } 
+            
+            _logger.LogInformation($"Retornados {donations.Count} campanhas.");
+            
+            return Ok(donations);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError($"Erro ao buscar lista de donations: {e.Message}");
+            return StatusCode(StatusCodes.Status500InternalServerError, new 
+            { 
+                message = "Ocorreu um erro interno ao buscar lista de donations.",
+                error = e.Message
+            });
+        }
+    }
 
     [HttpGet("{id:Guid}")]
     [Authorize(Policy = nameof(Role.Donor))]
@@ -96,15 +103,14 @@ public class DonationsController : ControllerBase
                 
                 return Unauthorized($"user: {userGuid} userRole: {userRole}");
             }
-            
-            
+
             var donationKey = $"donation-{id}";
             
-            var cachedGame = await _cacheService.GetAsync<Donation>(donationKey);
+            var cachedDonation = await _cacheService.GetAsync<Donation>(donationKey);
             
-            if (cachedGame != null)
+            if (cachedDonation != null)
             {
-                return Ok(cachedGame);
+                return Ok(cachedDonation);
             }
     
             var donation = _donationRepository.GetById(id);
@@ -129,7 +135,6 @@ public class DonationsController : ControllerBase
             });
         }
     }
-
     private Guid ValidateUserToken(Role validateRole)
     {
         var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
@@ -141,7 +146,6 @@ public class DonationsController : ControllerBase
             role = Enum.Parse<Role>(userRole);
         }
             
-        //var username = User.FindFirst(ClaimTypes.Name)?.Value;
         var userId = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
 
         var userGuid = Guid.Empty;
@@ -153,8 +157,6 @@ public class DonationsController : ControllerBase
         
         return userGuid;
     }
-    
-    
     
     [HttpPost]
     [Authorize(Policy = nameof(Role.Donor))]
@@ -199,7 +201,6 @@ public class DonationsController : ControllerBase
                 "donation.received",
                 new DonationReceivedEvent(donationInput.CampaignId, donationInput.Amount),CancellationToken.None
             );
-            
             
             _logger.LogInformation($"Donation User: {userGuid} Campanha {donationInput.CampaignId} Amount: {donationInput.Amount}");
             
