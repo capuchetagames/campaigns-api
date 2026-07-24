@@ -17,7 +17,7 @@ public class DonationInputValidator : AbstractValidator<DonationInput>
             .Must(campaignId =>
             {
                 var campaign = campaignRepository.GetById(campaignId);
-                return campaign is not null && campaign.Status == Status.Active;
+                return campaign is {Status: Status.Active, Ended: false};
             })
             .WithMessage("Doações são permitidas apenas para campanhas ativas.");
     }

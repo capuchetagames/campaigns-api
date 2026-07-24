@@ -52,7 +52,7 @@ public class CampaignsController : ControllerBase
         try
         {
             var campaigns = _campaignRepository.GetAll()
-                .Where(c => c.Status == Status.Active)
+                .Where(c => c is {Status: Status.Active, Ended: false})
                 .Select(c => new
                 {
                     c.Id,
@@ -74,7 +74,10 @@ public class CampaignsController : ControllerBase
             });
         }
     }
-
+    
+    /// <summary>
+    /// Retorna Todas as Campanhas, somente acesso Manager.
+    /// </summary>
     [HttpGet]
     [Authorize(Policy = nameof(Role.Manager))]
     [ProducesResponseType(typeof(IEnumerable<Campaign>), StatusCodes.Status200OK)]

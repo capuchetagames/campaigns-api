@@ -21,4 +21,6 @@ public class Campaign : EntityBase
     public Status Status { get; set; }
     
     public Guid CreatedBy { get; set; }
+    
+    public bool Ended => DateTime.Now > EndDate;
 }
