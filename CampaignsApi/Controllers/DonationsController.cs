@@ -4,7 +4,6 @@ using Core;
 using Core.Dtos;
 using Core.Entity;
 using Core.Models;
-using Core.Models.ElasticSearch;
 using Core.Repository;
 using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
@@ -20,19 +19,17 @@ public class DonationsController : ControllerBase
     private readonly IRabbitMqService _rabbitMqService;
     private readonly ICacheService _cacheService;
     private readonly ILogger<DonationsController> _logger;
-    private readonly IElasticClient<Donation> _elasticClient;
     private readonly IValidator<DonationInput> _donationInputValidator;
     
     private  const string DonationsListCacheKey = "DonationsList";
 
     public DonationsController(IDonationRepository donationRepository, ICacheService cacheService, ILogger<DonationsController> logger,
-        IRabbitMqService rabbitMqService, IElasticClient<Donation> elasticClient, IValidator<DonationInput> donationInputValidator)
+        IRabbitMqService rabbitMqService,  IValidator<DonationInput> donationInputValidator)
     {
         _donationRepository = donationRepository;
         _cacheService = cacheService;
         _logger = logger;
         _rabbitMqService = rabbitMqService;
-        _elasticClient = elasticClient;
         _donationInputValidator = donationInputValidator;
     }
 

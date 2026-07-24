@@ -5,7 +5,6 @@ using Core.Dtos;
 using Core.Entity;
 using Core.Enums;
 using Core.Models;
-using Core.Models.ElasticSearch;
 using Core.Repository;
 using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
@@ -21,21 +20,19 @@ public class CampaignsController : ControllerBase
     private readonly IRabbitMqService _rabbitMqService;
     private readonly ICacheService _cacheService;
     private readonly ILogger<CampaignsController> _logger;
-    private readonly IElasticClient<Campaign> _elasticClient;
     private readonly IValidator<CampaignInput> _campaignInputValidator;
     private readonly IValidator<CampaignUpdateInput> _campaignUpdateValidator;
 
     private const string CampaingListCacheKey = "campaing-list";
 
     public CampaignsController(ICampaignRepository campaignRepository, ICacheService cacheService, ILogger<CampaignsController> logger,
-        IRabbitMqService rabbitMqService, IElasticClient<Campaign> elasticClient, IValidator<CampaignInput> campaignInputValidator,
+        IRabbitMqService rabbitMqService, IValidator<CampaignInput> campaignInputValidator,
         IValidator<CampaignUpdateInput> campaignUpdateValidator)
     {
         _campaignRepository = campaignRepository;
         _cacheService = cacheService;
         _logger = logger;
         _rabbitMqService = rabbitMqService;
-        _elasticClient = elasticClient;
         _campaignInputValidator = campaignInputValidator;
         _campaignUpdateValidator = campaignUpdateValidator;
     }

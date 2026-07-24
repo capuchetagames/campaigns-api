@@ -1,3 +1,4 @@
+using Amazon.DynamoDBv2;
 using CampaignsApi.Config;
 using CampaignsApi.Middlewares;
 using CampaignsApi.Service;
@@ -7,10 +8,8 @@ using CampaignsApi.Service.RedisCache;
 using CampaignsApi.Service.Validator;
 using CatalogApi.Service;
 using Core.Models;
-using Core.Models.ElasticSearch;
 using Core.Repository;
 using FluentValidation;
-using Infrastructure.ElasticSearch;
 using Infrastructure.Repository;
 using Microsoft.Extensions.Options;
 using Prometheus;
@@ -69,17 +68,6 @@ builder.Services.AddScoped<ITokenValidationService, TokenValidationService>();
 builder.AddJwtAuthentication();
 builder.Services.AddPolicyAuthorization();
 
-// ElasticSearch (client é instanciado de forma lazy; UseCloud=false usa apenas a LocalUrl)
-builder.Services.AddSingleton<IElasticSettings>(
-    builder.Configuration.GetSection("ElasticSettings").Get<ElasticSettings>() ?? new ElasticSettings
-    {
-        UseCloud = false,
-        LocalUrl = "http://localhost:9200",
-        ApiKey = string.Empty,
-        CloudId = string.Empty
-    });
-builder.Services.AddSingleton(typeof(IElasticClient<>), typeof(ElasticClient<>));
-
 builder.Services.AddHealthChecks().ForwardToPrometheus(); 
 
 builder.Services.Configure<RabbitMqSettings>(builder.Configuration.GetSection("RabbitMq"));
@@ -100,7 +88,7 @@ var app = builder.Build();
 // Com DynamoDB local, cria a tabela de logs se ainda não existir
 if (builder.Configuration.GetValue<bool>("DynamoDb:UseLocal"))
 {
-    var dynamoClient = app.Services.GetRequiredService<Amazon.DynamoDBv2.IAmazonDynamoDB>();
+    var dynamoClient = app.Services.GetRequiredService<IAmazonDynamoDB>();
     await DynamoDbExtensions.EnsureLogTableExistsAsync(dynamoClient, logTableName);
 }
 
