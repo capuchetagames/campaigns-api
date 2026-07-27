@@ -66,7 +66,7 @@ public class DonationsController : ControllerBase
                 await _cacheService.SetAsync(DonationsListCacheKey, donations, TimeSpan.FromMinutes(15));
             } 
             
-            _logger.LogInformation($"Retornados {donations.Count} campanhas.");
+            _logger.LogInformation($"Retornados: ----->  {donations.Count} campanhas.");
             
             return Ok(donations);
         }
